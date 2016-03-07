@@ -12,6 +12,8 @@
       <rotationaxis>0 1 0 90</rotationaxis>
       <radius>0.1</radius>
       <height>2</height>
+      <ambientColor>1. 0. 0.</ambientColor>
+      <diffuseColor>1. 0. 0.</diffuseColor>
     </geom>
   </body>
   <body name="c1" type="dynamic">
@@ -20,6 +22,8 @@
       <rotationaxis>0 1 0 90</rotationaxis>
       <radius>0.1</radius>
       <height>2</height>
+      <ambientColor>0. 0. 1.</ambientColor>
+      <diffuseColor>0. 0. 1.</diffuseColor>
     </geom>
   </body>
   <body name="s0" type="dynamic">
@@ -44,6 +48,12 @@
     <body>c0</body>
     <body>s0</body>
     <axis>0 -1 0</axis>
+    <limits>-1 1</limits>
   </joint>
  </KinBody>
+ <Manipulator name="arm">
+  <effector>s0</effector>
+  <base>c1</base>
+  <direction>0 0 1</direction>
+ </Manipulator>
 </Robot>
