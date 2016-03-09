@@ -1,0 +1,59 @@
+<!-- demonstrates very simple spherical joint -->
+<Robot name="dvrk">
+ <KinBody>
+  <body name="center" type="dynamic">
+    <translation>0 1 0</translation>
+    <geom type="sphere">
+      <radius>0.1</radius>
+    </geom>
+  </body>
+  <body name="c0" type="dynamic">
+    <geom type="cylinder">
+      <rotationaxis>0 1 0 90</rotationaxis>
+      <radius>0.1</radius>
+      <height>2</height>
+      <ambientColor>1. 0. 0.</ambientColor>
+      <diffuseColor>1. 0. 0.</diffuseColor>
+    </geom>
+  </body>
+  <body name="c1" type="dynamic">
+    <translation>0 2 0</translation>
+    <geom type="cylinder">
+      <rotationaxis>0 1 0 90</rotationaxis>
+      <radius>0.1</radius>
+      <height>2</height>
+      <ambientColor>0. 0. 1.</ambientColor>
+      <diffuseColor>0. 0. 1.</diffuseColor>
+    </geom>
+  </body>
+  <body name="s0" type="dynamic">
+    <translation>0 -1 0</translation>
+    <geom type="cylinder">
+      <rotationaxis>0 1 0 90</rotationaxis>
+      <radius>0.05</radius>
+      <height>2</height>
+    </geom>
+  </body>
+  <joint name="joint0" type="spherical">
+    <body>center</body>
+    <body>c0</body>
+    <anchor>0 1 0</anchor>
+  </joint>
+  <joint name="joint1" type="spherical">
+    <body>center</body>
+    <body>c1</body>
+    <anchor>0 1 0</anchor>
+  </joint>
+  <joint name="joint2" type="slider">
+    <body>c0</body>
+    <body>s0</body>
+    <axis>0 -1 0</axis>
+    <limits>-1 1</limits>
+  </joint>
+ </KinBody>
+ <Manipulator name="arm">
+  <effector>s0</effector>
+  <base>c1</base>
+  <direction>0 0 1</direction>
+ </Manipulator>
+</Robot>
