@@ -23,7 +23,7 @@ class dVRK_IK_simple:
 	def __init__(self, endCoords):
 		self.thLimits = [-math.pi/2, math.pi/2]
 		self.azLimits = [-math.pi/2, math.pi/2]
-		self.lLimits = 3								# 3 meters of extension length? 
+		self.lLimits = 2								# 3 meters of extension length? 
 		self.endEffector = endCoords					# desired end effector coordinates as list
 		assert (type(self.endEffector) is list)
 
@@ -38,16 +38,24 @@ class dVRK_IK_simple:
 
 		return self.__getLlimits(L, th, az)					# Returns to the user the final DOF 
 
-	def get_endEffector_fromDOF(self):
+	def get_endEffector_fromDOF(self, joint_DOF):
 		# Returns end effector pose from DOF input
 		# Based on the relationship x^2 + y^2 + z^2 = L
 		# y/x = tan(th)
 		# z/x = -tan(az)
-		# rtype = [x, y, z]	as list
+		# rtype = [X, Y, Z]	as list
 
-		from math import tan
-		
+		# Input param: joint_DOF = [L, th, az]
+		L, th, az = joint_DOF
 
+		from math import tan, cos, sin
+		ratio = L**2 / (1 + tan(th)**2 + tan(az)**2)
+		proj_len_XY = math.sqrt(ratio * (1 + (tan(th))**2))
+		proj_len_XZ = math.sqrt(ratio * (1 + (tan(az))**2))
+
+		X = cos(th) * proj_len_XY; Y = sin(th) * proj_len_XY; Z = sin(az) * proj_len_XZ
+		# import IPython; IPython.embed()
+		return [X, Y, Z]
 
 	def __getLlimits(self, L,th, az):
 		L = min(L, self.lLimits)
@@ -107,7 +115,8 @@ class dVRK_IK_simple:
 			return -1
 
 if __name__ == "__main__":
-	IK = dVRK_IK_simple([0,-1,0])
+	IK = dVRK_IK_simple([1,0.1,2])
 	print(IK.getDOF())
+	print(IK.get_endEffector_fromDOF(IK.getDOF()))
 
 
