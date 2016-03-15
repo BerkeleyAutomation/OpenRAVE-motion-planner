@@ -11,24 +11,24 @@ import IK
 
 env = openravepy.Environment()
 env.StopSimulation()
-env.Load("robots/pr2-beta-static.zae")
-env.Load("../data/table.xml")
+env.Load("dvrk2.robot.xml")
+# env.Load("../data/table.xml")
 
 trajoptpy.SetInteractive(args.interactive) # pause every iteration, until you press 'p'. Press escape to disable further plotting
 robot = env.GetRobots()[0]
 
-joint_start = ['<Length>, <theta>, <az>']
-robot.SetDOFValues(joint_start, robot.GetManipulator('<arm name>').GetArmIndices())
+joint_start = [0, 0, 0]
+robot.SetDOFValues(joint_start, robot.GetManipulator('arm').GetArmIndices())
 
-joint_endEffector = ['<x>, <y>, <z>']
-IK_obj = dVRK_IK_simple(joint_endEffector)            # Creates an IK object 
+joint_endEffector = [3.14/4, 3.14/4, 0]
+IK_obj = IK.dVRK_IK_simple(joint_endEffector)            # Creates an IK object 
 joint_target = IK_obj.getDOF()                        # Gets DOF for target end effector pose
 
 
 request = {
   "basic_info" : {
-    "n_steps" : 10,
-    "manip" : "rightarm", # see below for valid values
+    "n_steps" : 20,
+    "manip" : "arm", # see below for valid values
     "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
   },
   "costs" : [
@@ -62,6 +62,8 @@ t_start = time.time()
 result = trajoptpy.OptimizeProblem(prob) # do optimization
 t_elapsed = time.time() - t_start
 print "optimization took %.3f seconds"%t_elapsed
+import IPython
+IPython.embed()
 
 from trajoptpy.check_traj import traj_is_safe
 prob.SetRobotActiveDOFs() # set robot DOFs to DOFs in optimization problem
