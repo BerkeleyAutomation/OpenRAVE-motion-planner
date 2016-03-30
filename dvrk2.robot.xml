@@ -47,6 +47,7 @@
  <Manipulator name="arm">
   <effector>s0</effector>
   <base>center0</base>
+  <joint>joint0 joint1 joint2</joint>
   <direction>0 0 1</direction>
  </Manipulator>
 </Robot>

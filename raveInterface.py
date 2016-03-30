@@ -22,9 +22,12 @@ joint_start = [0, 0, 0]
 robot.SetDOFValues(joint_start, robot.GetManipulator('arm').GetArmIndices())
 
 # joint_endEffector = [3.14/2 , 0, ]
-# IK_obj = IK.dVRK_IK_simple(joint_endEffector)            # Creates an IK object 
-# joint_target = IK_obj.getDOF()                        # Gets DOF for target end effector pose
-joint_target = [3.14/2, 0 , 0]
+joint_target = [3.14/2, 3.14/4 , -0.3]
+IK_obj = IK.dVRK_IK_simple()                            # Creates an IK object 
+joint_endEffector = IK_obj.get_endEffector_fromDOF(joint_target)
+joint_target = IK_obj.getDOF(joint_endEffector)                        # Gets DOF for target end effector pose
+
+print joint_target
 
 request = {
   "basic_info" : {
@@ -41,7 +44,7 @@ request = {
   {
     "type" : "collision",
     "params" : {
-      "coeffs" : [100], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+      "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
       "dist_pen" : [0.025], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
       "continuous" : True
     },    
@@ -54,7 +57,7 @@ request = {
   }
   ],
   "init_info" : {
-      "type" : "straight_line", # straight line in joint space.
+      "type" : "stationary", # straight line in joint space.
       "endpoint" : joint_target
   }
 }
@@ -65,8 +68,9 @@ result = trajoptpy.OptimizeProblem(prob) # do optimization
 t_elapsed = time.time() - t_start
 print "optimization took %.3f seconds"%t_elapsed
 traj = result.GetTraj()
-IPython.embed()
 
 from trajoptpy.check_traj import traj_is_safe
 prob.SetRobotActiveDOFs() # set robot DOFs to DOFs in optimization problem
-assert traj_is_safe(result.GetTraj(), robot) # Check that trajectory is collision free
+print traj_is_safe(result.GetTraj(), robot) # Check that trajectory is collision free
+
+IPython.embed()
