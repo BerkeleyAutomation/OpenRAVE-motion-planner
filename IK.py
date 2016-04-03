@@ -20,19 +20,17 @@ import numpy as np
 
 class dVRK_IK_simple:
 
-	def __init__(self, endCoords):
+	def __init__(self):
 		self.thLimits = [-math.pi/2, math.pi/2]
 		self.azLimits = [-math.pi/2, math.pi/2]
 		self.lLimits = 2								# 3 meters of extension length? 
-		self.endEffector = endCoords					# desired end effector coordinates as list
-		assert (type(self.endEffector) is list)
 
-	def getDOF(self):
+	def getDOF(self, endEffector):
 		# Gets the current position of the arm and the desired end effector position
 		# Returns a list of [L, th, az]
 		# For now assume that the arm starts off at (1,0,0) always
 		basePos = np.array([1,0,0]); 
-		desiredPos = np.array(self.endEffector);
+		desiredPos = np.array(endEffector);
 		L = np.linalg.norm(desiredPos)								# Gets the desired length
 		[th, az] = self.__checkSingularity(basePos, desiredPos)
 
