@@ -115,7 +115,7 @@ class dVRK_IK_simple:
 			return -1
 
 if __name__ == "__main__":
-	IK = dVRK_IK_simple([1,0.1,2])
+	IK = dVRK_IK_simple([1,0,-0.2])
 	print(IK.getDOF())
 	print(IK.get_endEffector_fromDOF(IK.getDOF()))
 
