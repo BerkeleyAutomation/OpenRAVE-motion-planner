@@ -27,33 +27,61 @@ class dVRK_IK_simple:
 
 	def getDOF(self, endEffector):
 		# Gets the current position of the arm and the desired end effector position
+		# the endEffector type can either be a single list of a nested list to handle multiple way point specifications
+		# the type of the return value will follow the type of the endEffector
 		# Returns a list of [L, th, az]
 		# For now assume that the arm starts off at (1,0,0) always
-		basePos = np.array([1,0,0]); 
-		desiredPos = np.array(endEffector);
-		L = np.linalg.norm(desiredPos)								# Gets the desired length
-		[th, az] = self.__checkSingularity(basePos, desiredPos)
 
-		return self.__getLlimits(L, th, az)					# Returns to the user the final DOF 
+		basePos = np.array([1,0,0]); 
+		if any(isinstance(i,list) for i in endEffector):
+			# multiply way point specified
+			joint_DOF = []
+
+			for j in endEffector:
+				desiredPos = np.array(j);
+				L = np.linalg.norm(desiredPos)								# Gets the desired length
+				[th, az] = self.__checkSingularity(basePos, desiredPos)
+				joint_DOF.append([L, th, az])
+			return joint_DOF												# Returns final DOF as nested list
+
+		else:
+			desiredPos = np.array(endEffector);
+			L = np.linalg.norm(desiredPos)									# Gets the desired length
+			[th, az] = self.__checkSingularity(basePos, desiredPos)
+			return self.__getLlimits(L, th, az)								# Returns final DOF as list
 
 	def get_endEffector_fromDOF(self, joint_DOF):
 		# Returns end effector pose from DOF input
+		# the joint_DOF type can either be a single list of a nested list to handle multiple way point specifications
+		# the type of the return value will follow the type of the joint_DOF
 		# Based on the relationship x^2 + y^2 + z^2 = L
 		# y/x = tan(th)
 		# z/x = -tan(az)
 		# rtype = [X, Y, Z]	as list
 
 		# Input param: joint_DOF = [L, th, az]
-		L, th, az = joint_DOF
-
 		from math import tan, cos, sin
-		ratio = L**2 / (1 + tan(th)**2 + tan(az)**2)
-		proj_len_XY = math.sqrt(ratio * (1 + (tan(th))**2))
-		proj_len_XZ = math.sqrt(ratio * (1 + (tan(az))**2))
 
-		X = cos(th) * proj_len_XY; Y = sin(th) * proj_len_XY; Z = sin(az) * proj_len_XZ
-		# import IPython; IPython.embed()
-		return [X, Y, Z]
+		if any(isinstance(i,list) for i in joint_DOF):
+			# multiply joint DOF specified
+			endEffector = []
+			for j in joint_DOF:
+				L, th, az = j
+				ratio = L**2 / (1 + tan(th)**2 + tan(az)**2)
+				proj_len_XY = math.sqrt(ratio * (1 + (tan(th))**2))
+				proj_len_XZ = math.sqrt(ratio * (1 + (tan(az))**2))
+				X = cos(th) * proj_len_XY; Y = sin(th) * proj_len_XY; Z = sin(az) * proj_len_XZ
+				endEffector.append([X,Y,Z])
+			return endEffector
+
+		else:
+			L, th, az = joint_DOF
+			ratio = L**2 / (1 + tan(th)**2 + tan(az)**2)
+			proj_len_XY = math.sqrt(ratio * (1 + (tan(th))**2))
+			proj_len_XZ = math.sqrt(ratio * (1 + (tan(az))**2))
+			X = cos(th) * proj_len_XY; Y = sin(th) * proj_len_XY; Z = sin(az) * proj_len_XZ
+			# import IPython; IPython.embed()
+			return [X, Y, Z]
 
 	def __getLlimits(self, L,th, az):
 		L = min(L, self.lLimits)
@@ -113,8 +141,11 @@ class dVRK_IK_simple:
 			return -1
 
 if __name__ == "__main__":
-	IK = dVRK_IK_simple([1,0,-0.2])
-	print(IK.getDOF())
-	print(IK.get_endEffector_fromDOF(IK.getDOF()))
+	IK = dVRK_IK_simple()
+	DOF = IK.getDOF([[0.7,0.2,-1.1],[0.1,1.2,0.3]])
+	endEff = IK.get_endEffector_fromDOF(DOF)
+
+	print(DOF)
+	print(endEff)
 
 
