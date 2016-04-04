@@ -1,5 +1,4 @@
-<!-- demonstrates very simple spherical joint -->
-<Robot name="dvrk">
+<Robot name="rightArm">
  <KinBody>
   <body name="center0" type="dynamic">
     <geom type="sphere">
@@ -13,8 +12,8 @@
       <rotationaxis>0 1 0 90</rotationaxis>
       <radius>0.1</radius>
       <height>2</height>
-      <ambientColor>1. 0. 0.</ambientColor>
-      <diffuseColor>1. 0. 0.</diffuseColor>
+      <ambientColor>0. 0. 1.</ambientColor>
+      <diffuseColor>0. 0. 1.</diffuseColor>
     </geom>
   </body>
   <body name="s0" type="dynamic">
