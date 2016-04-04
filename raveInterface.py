@@ -1,4 +1,4 @@
-  import argparse
+import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--interactive", action="store_true")
 args = parser.parse_args()
@@ -16,19 +16,19 @@ env.Load("env.xml")
 # env.Load("../data/table.xml")
 
 trajoptpy.SetInteractive(args.interactive) # pause every iteration, until you press 'p'. Press escape to disable further plotting
-left_arm = env.GetRobots()[0]
+robot = env.GetRobots()[0]
 joint_start1 = [3.14/8, 3.14/4, 0]
-left_arm.SetDOFValues(joint_start, robot.GetManipulator('arm').GetArmIndices())
+robot.SetDOFValues(joint_start, robot.GetManipulator('left_arm').GetArmIndices())
 
-right_arm = env.GetRobots()[1]
 joint_start2 = [-3.14/8, 3.14/4, 0]
-right_arm.SetDOFValues(joint_start2, robot.GetManipulator('arm').GetArmIndices())
+robot.SetDOFValues(joint_start2, robot.GetManipulator('right_arm').GetArmIndices())
 
-# joint_endEffector = [3.14/2 , 0, ]
-joint_target = [3.14/2, 0 , 0]
-IK_obj = IK.dVRK_IK_simple()                            # Creates an IK object 
-joint_endEffector = IK_obj.get_endEffector_fromDOF(joint_target)
-joint_target = IK_obj.getDOF(joint_endEffector)                        # Gets DOF for target end effector pose
+manip = robot.SetActiveManipulator('left_arm')
+time.sleep(0.1)                           # Give time for the environment to update
+
+IK_obj = IK.dVRK_IK_simple()                                # Creates an IK object 
+joint_endEffector = [[<"something here">]]                  # Set all waypoints here
+joint_target = IK_obj.getDOF(joint_endEffector)             # Gets DOF for target end effector pose
 
 print joint_target
 
@@ -56,12 +56,12 @@ request = {
   "constraints" : [
   {
     "type" : "joint", # joint-space target
-    "params" : {"vals" : joint_target } # length of vals = # dofs of manip
+    "params" : {"vals" : joint_target[-1]} # length of vals = # dofs of manip
   }
   ],
   "init_info" : {
-      "type" : "stationary", # straight line in joint space.
-      "endpoint" : joint_target
+      "type" : "given_traj", # straight line in joint space.
+      "data" : joint_target
   }
 }
 s = json.dumps(request) # convert dictionary into json-formatted string
