@@ -1,0 +1,113 @@
+<Robot name="rightArm">
+  <KinBody>
+    <body name="center0" type="dynamic">
+      <geom type="cylinder">
+      <!-- <geom type="sphere"> -->
+        <rotationaxis>0 0 1 90</rotationaxis>
+        <radius>0</radius>
+        <height>2</height>
+      </geom>
+    </body>
+    <body name="dummy0" type="dynamic">
+      <offsetfrom>center0</offsetfrom>
+      <translation>1 0 0</translation>
+    </body>
+    <body name="c0" type="dynamic">
+      <offsetfrom>dummy0</offsetfrom>
+      <geom type="cylinder">
+        <rotationaxis>0 1 0 90</rotationaxis>
+        <radius>0.1</radius>
+        <height>2</height>
+        <ambientColor>0. 0. 1.</ambientColor>
+        <diffuseColor>0. 0. 1.</diffuseColor>
+      </geom>
+    </body>
+    <body name="s0" type="dynamic">
+      <offsetfrom>dummy0</offsetfrom>
+      <translation>0 -1 0</translation>
+      <geom type="cylinder">
+        <rotationaxis>0 1 0 90</rotationaxis>
+        <radius>0.05</radius>
+        <height>2</height>
+      </geom>
+    </body>
+    <joint name="joint0" type="hinge">
+      <body>center0</body>
+      <body>dummy0</body>
+      <offsetfrom>dummy0</offsetfrom>
+      <weight>4</weight>
+      <anchor>0 0 0</anchor>
+      <axis>0 0 1</axis>
+    </joint>
+    <joint name="joint1" type="hinge">
+      <body>dummy0</body>
+      <body>c0</body>
+      <anchor>0 0 0</anchor>
+      <axis>1 0 0</axis>
+    </joint>
+    <joint name="joint2" type="slider">
+      <body>c0</body>
+      <body>s0</body>
+      <axis>0 -1 0</axis>
+      <limits>-1 1</limits>
+    </joint>
+
+    <body name="dummy1" type="dynamic">
+      <offsetfrom>center0</offsetfrom>
+      <translation>-1 0 0</translation>
+    </body>
+    <body name="c1" type="dynamic">
+      <offsetfrom>dummy1</offsetfrom>
+      <geom type="cylinder">
+        <rotationaxis>0 1 0 90</rotationaxis>
+        <radius>0.1</radius>
+        <height>2</height>
+        <ambientColor>1. 0. 0.</ambientColor>
+        <diffuseColor>1. 0. 0.</diffuseColor>
+      </geom>
+    </body>
+    <body name="s1" type="dynamic">
+      <offsetfrom>dummy1</offsetfrom>
+      <translation>0 -1 0</translation>
+      <geom type="cylinder">
+        <rotationaxis>0 1 0 90</rotationaxis>
+        <radius>0.05</radius>
+        <height>2</height>
+      </geom>
+    </body>
+    <joint name="joint3" type="hinge">
+      <body>center0</body>
+      <body>dummy1</body>
+      <offsetfrom>dummy1</offsetfrom>
+      <weight>4</weight>
+      <anchor>0 0 0</anchor>
+      <axis>0 0 1</axis>
+    </joint>
+    <joint name="joint4" type="hinge">
+      <body>dummy1</body>
+      <body>c1</body>
+      <anchor>0 0 0</anchor>
+      <axis>1 0 0</axis>
+    </joint>
+    <joint name="joint5" type="slider">
+      <body>c1</body>
+      <body>s1</body>
+      <axis>0 -1 0</axis>
+      <limits>-1 1</limits>
+    </joint>
+  </KinBody>
+
+  <Manipulator name="right_arm">
+    <effector>s0</effector>
+    <base>center0</base>
+    <joint>joint0 joint1 joint2</joint>
+    <direction>0 0 1</direction>
+  </Manipulator>
+
+  <Manipulator name="left_arm">
+    <effector>s1</effector>
+    <base>center0</base>
+    <joint>joint3 joint4 joint5</joint>
+    <direction>0 0 1</direction>
+  </Manipulator>
+</Robot>

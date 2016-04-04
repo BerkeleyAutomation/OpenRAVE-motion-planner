@@ -43,7 +43,7 @@
     <limits>-1 1</limits>
   </joint>
  </KinBody>
- <Manipulator name="arm">
+ <Manipulator name="rightArm">
   <effector>s0</effector>
   <base>center0</base>
   <joint>joint0 joint1 joint2</joint>

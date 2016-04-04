@@ -1,4 +1,4 @@
-<Robot name="dvrk">
+<Robot name="leftArm">
  <KinBody>
   <body name="center0" type="dynamic">
     <!-- <translation>-1 0 0</translation> -->
@@ -97,7 +97,7 @@
   </joint>
  </KinBody>
  -->
- <Manipulator name="arm">
+ <Manipulator name="leftArm">
   <effector>s0</effector>
   <base>center0</base>
   <joint>joint0 joint1 joint2</joint>
