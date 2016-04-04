@@ -16,16 +16,16 @@ env.Load("env.xml")
 # env.Load("../data/table.xml")
 
 trajoptpy.SetInteractive(args.interactive) # pause every iteration, until you press 'p'. Press escape to disable further plotting
-left_arm = env.GetRobots()[0]
-joint_start1 = [3.14/8, 3.14/4, 0]
-left_arm.SetDOFValues(joint_start, robot.GetManipulator('arm').GetArmIndices())
+robot = env.GetRobots()[0]
 
-right_arm = env.GetRobots()[1]
-joint_start2 = [-3.14/8, 3.14/4, 0]
-right_arm.SetDOFValues(joint_start2, robot.GetManipulator('arm').GetArmIndices())
+joint_start = [0, 0, 0]
+robot.SetDOFValues(joint_start, robot.GetManipulator('arm').GetArmIndices())
 
 # joint_endEffector = [3.14/2 , 0, ]
-joint_target = [3.14/2, 0 , 0]
+joint_endEffector =   [[X,Y,Z], \ 
+                       [X,Y,Z], \
+                       [X,Y,Z]]
+                       
 IK_obj = IK.dVRK_IK_simple()                            # Creates an IK object 
 joint_endEffector = IK_obj.get_endEffector_fromDOF(joint_target)
 joint_target = IK_obj.getDOF(joint_endEffector)                        # Gets DOF for target end effector pose
@@ -60,7 +60,7 @@ request = {
   }
   ],
   "init_info" : {
-      "type" : "stationary", # straight line in joint space.
+      "type" : "given_traj", # straight line in joint space.
       "endpoint" : joint_target
   }
 }
