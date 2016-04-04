@@ -35,29 +35,29 @@ print joint_target
 
 request = {
   "basic_info" : {
-    "n_steps" : 20,
+    "n_steps" : 100,
     "manip" : "right_arm", # see below for valid values
     "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
   },
   "costs" : [
   {
     "type" : "joint_vel", # joint-space velocity cost
-    "params": {"coeffs" : [10]} # a list of length one is automatically expanded to a list of length n_dofs
+    "params": {"coeffs" : [100]} # a list of length one is automatically expanded to a list of length n_dofs
     # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
   },
-  # {
-  #   "type" : "collision",
-  #   "params" : {
-  #     "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-  #     "dist_pen" : [0.04], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
-  #     "continuous" : True
-  #   }
-  # },
   {
     "type" : "collision",
     "params" : {
       "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-      "dist_pen" : [0.4], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+      "dist_pen" : [0.04], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+      "continuous" : True
+    }
+  },
+  {
+    "type" : "collision",
+    "params" : {
+      "coeffs" : [20], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+      "dist_pen" : [0.04], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
       "continuous" : False
     }
   }    
