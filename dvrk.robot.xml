@@ -35,7 +35,6 @@
       <body>center0</body>
       <body>dummy0</body>
       <offsetfrom>dummy0</offsetfrom>
-      <weight>4</weight>
       <anchor>0 0 0</anchor>
       <axis>0 0 1</axis>
     </joint>
@@ -79,7 +78,6 @@
       <body>center0</body>
       <body>dummy1</body>
       <offsetfrom>dummy1</offsetfrom>
-      <weight>4</weight>
       <anchor>0 0 0</anchor>
       <axis>0 0 1</axis>
     </joint>

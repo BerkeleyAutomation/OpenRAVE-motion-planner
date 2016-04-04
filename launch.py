@@ -37,6 +37,11 @@ if __name__ == "__main__":
 	viewer = env.GetViewer()
 	viewer.SetBkgndColor([.8, .85, .9])
 	robot = env.GetRobots()[0]
+	joint_start1 = [3.14/3, 3.14/4, 0]
+	robot.SetDOFValues(joint_start1, robot.GetManipulator('left_arm').GetArmIndices())
+
+	joint_start2 = [-3.14/5, 3.14/4, 0]
+	robot.SetDOFValues(joint_start2, robot.GetManipulator('right_arm').GetArmIndices())
 	# traj = get_swing_trajectory(robot)
 	# play_trajectory(robot, traj)
 
