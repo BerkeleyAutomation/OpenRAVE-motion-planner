@@ -4,7 +4,7 @@ parser.add_argument("--interactive", action="store_true")
 # parser.add_argument("--collision", action="pqp")
 args = parser.parse_args()
 
-import openravepy
+import openravepy as op
 import trajoptpy
 import json
 import time
@@ -13,13 +13,17 @@ import IPython
 from math import pi
 import numpy as np
 
-env = openravepy.Environment()
+env = op.Environment()
 env.StopSimulation()
 env.Load("env.xml")
 # env.Load("../data/table.xml")
 
 trajoptpy.SetInteractive(args.interactive) # pause every iteration, until you press 'p'. Press escape to disable further plotting
 robot = env.GetRobots()[0]
+collisionChecker = op.RaveCreateCollisionChecker(env,'pqp')
+collisionChecker.SetCollisionOptions(op.CollisionOptions.Distance|op.CollisionOptions.Contacts)
+env.SetCollisionChecker(collisionChecker)
+
 joint_start1 = [3.14/3, 3.14/4, 0]
 robot.SetDOFValues(joint_start1, robot.GetManipulator('left_arm').GetArmIndices())
 
@@ -30,19 +34,20 @@ robot.SetDOFValues(joint_start2, robot.GetManipulator('right_arm').GetArmIndices
 time.sleep(0.1)                           # Give time for the environment to update
 
 IK_obj = IK.dVRK_IK_simple()                                # Creates an IK object 
-endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 20])
-joint_target = IK_obj.getDOF(endEff)     
-joint_target[-1] -= 20
+endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
+joint_target = IK_obj.get_joint_DOF(endEff)     
 manip = "right_arm"
 
-print joint_target
-
+startEff = IK_obj.get_endEffector_fromDOF(joint_start2)
+print np.linalg.norm(np.array(endEff) - np.array(startEff))
+# IPython.embed()
 request = {
   "basic_info" : {
     "n_steps" : 200,
     "manip" : manip, # see below for valid values
     "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
   },
+
   "costs" : [
   {
     "type" : "joint_vel", # joint-space velocity cost
@@ -57,6 +62,7 @@ request = {
       "continuous" : True
     }
   },
+
   {
     "type" : "collision",
     "params" : {
@@ -66,15 +72,28 @@ request = {
     }
   }    
   ],
+
   "constraints" : [
   {
     "type" : "joint", # joint-space target
-    "params" : {"vals" : joint_target} # length of vals = # dofs of manip
+    "params" : {"vals" : joint_target[0]} # length of vals = # dofs of manip
+    },
+  {
+    "type"    : "cart_vel",
+    "name"    : "cart_vel",
+    "params"  : {
+      "max_displacement"  : 100,
+      "first_step"        : 0,
+      "last_step"         : 200 -1, #inclusive
+      "link"              : "c0"
+    }
   }
+
   ],
   "init_info" : {
-      "type" : "straight_line", # straight line in joint space.
-      "endpoint" : joint_target
+      # "type" : "straight_line", # straight line in joint space.
+      # "endpoint" : joint_target
+      "type" : "stationary"
   }
 }
 s = json.dumps(request) # convert dictionary into json-formatted string
@@ -84,7 +103,7 @@ result = trajoptpy.OptimizeProblem(prob) # do optimization
 t_elapsed = time.time() - t_start
 print "optimization took %.3f seconds"%t_elapsed
 traj = result.GetTraj()
-
+  
 # IPython.embed()
 from trajoptpy.check_traj import traj_is_safe
 prob.SetRobotActiveDOFs() # set robot DOFs to DOFs in optimization problem
@@ -96,7 +115,7 @@ def f(x):
   return np.append(x, joint_start1)
 robot_traj = map(f, traj)
 print robot_traj
-print "[IS SAFE]: " + str(traj_is_safe(robot_traj, robot, 200)) # Check that trajectory is collision free
+# print "[IS SAFE]: " + str(traj_is_safe(robot_traj, robot, 200)) # Check that trajectory is collision free
 
 joint_angles = result.GetTraj()
 
@@ -106,8 +125,6 @@ joint_angles = result.GetTraj()
 #   time.sleep(1)
 
 # IPython.embed()
-env = openravepy.Environment()
-env.Load('env.xml')
 env.SetViewer('qtcoin')
 viewer = env.GetViewer()
 viewer.SetBkgndColor([.8, .85, .9])
