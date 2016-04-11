@@ -130,9 +130,14 @@ class dVRK_IK_simple:
 
 if __name__ == "__main__":
 	IK = dVRK_IK_simple()
+<<<<<<< HEAD
+	DOF = [0, 0, 31]
+	# DOF = IK.getDOF([[0.7,0.2,-1.1],[0.1,1.2,0.3]])
+=======
 	DOF = IK.get_joint_DOF([[10,20,0],[30,30,0]])
+>>>>>>> b80c90297d32bcb3822e77899505d5aaeb8fb4bf
 	endEff = IK.get_endEffector_fromDOF(DOF)
-	joint = IK.get_joint_DOF(endEff)
+	joint = IK.getDOF(endEff)
 
 	print(joint)
 	print(endEff)
