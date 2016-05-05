@@ -2,24 +2,6 @@
 
 import openravepy
 
-class Trajectory(object):
-
-	def __init__(self, T, q_ftn):
-		self.T = T  # duration, in seconds
-		self.q = q_ftn
-
-from numpy import array, pi
-
-def get_swing_trajectory(robot, T=1.):
-	q0 = robot.GetDOFValues()
-	q1 = array([pi, 0.])
-
-	def q(t):
-		x = 0. if t < 0. else 1. if t > T else (t / T)
-		return (1. - x) * q0 + x * q1 	
-
-	return Trajectory(T, q)
-
 from numpy import arange
 import time
 
