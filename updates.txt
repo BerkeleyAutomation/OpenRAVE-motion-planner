@@ -1,0 +1,17 @@
+To get the links to check for collision
+	-> Check for collision between s0 and s1 - The 2 cylinders that are the main cause of collision
+	-> Initialize a Kin body via env.GetKinBody('dvrk')
+	-> get links 4 & 7 using kin.GetLinks[3] & kin.GetLinks[6]
+
+Set the collision checker for the system 
+	-> env.GetCollisionChecker().SetCollisionOptions(op.CollisionOptions.Contacts)
+
+Use the self collision checker via
+	-> env.CheckCollision(kin.GetLinks()[3], kin.GetLinks()[6])
+
+
+Next steps:
+	Add restrictions on how far the arm can turn. 
+	Can't turn more than 180 deg clockwise or anti-clockwise
+	These restrictions come as penalties that the arm can't turn to such a high degree
+	Implement the checker to flag that collision happens and have to explore another form of initialization

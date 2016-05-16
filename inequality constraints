@@ -1,0 +1,8 @@
+inequality constraints
+1) Joint velocity limit
+2) Joint angular speed limit
+
+equality constraints
+1) End effector pose at any given time
+2) Orientation constraints 
+3) Pose constraints
