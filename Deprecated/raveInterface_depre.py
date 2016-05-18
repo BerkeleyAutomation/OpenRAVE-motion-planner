@@ -36,7 +36,7 @@ time.sleep(0.1)                           # Give time for the environment to upd
 IK_obj = IK.dVRK_IK_simple()                                # Creates an IK object 
 endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
 joint_target = IK_obj.get_joint_DOF(endEff) 
-joint_target[0][-1] = -5    
+  
 manip = "right_arm"
 
 startEff = IK_obj.get_endEffector_fromDOF(joint_start2)
@@ -103,7 +103,7 @@ request = {
   ],
   "init_info" : {
       "type" : "straight_line", # straight line in joint space.
-      "endpoint" : joint_target[0]
+      "endpoint" : [-3.14/4, 3.14/4, -10]
       # "endpoint" : [-3.14/4, 3.14/4, -5]
       # "type" : "stationary"
   }

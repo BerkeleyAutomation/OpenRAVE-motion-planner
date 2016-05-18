@@ -21,8 +21,8 @@ class Motion_planning:
 		self.env.Load(env_file)
 
 		self.robot 		= self.env.GetRobots()[indx]
-		self.Left_arm 	= self.robot.GetManipulator('left_arm')
-		self.Right_arm 	= self.robot.GetManipulator('right_arm')
+		self.left_arm 	= self.robot.GetManipulator('left_arm')
+		self.right_arm 	= self.robot.GetManipulator('right_arm')
 
 	# env.Load("env.xml")
 	# env.Load("../data/table.xml")
@@ -50,10 +50,11 @@ class Motion_planning:
 		"""
 		self.plan_arm 	= manip 	# Sets the planning arm for visual purpose
 		self.target 	= joint_target
+		n_steps = 200
 
 		self.request = {
 		  "basic_info" : {
-		    "n_steps" : 200,
+		    "n_steps" : n_steps,
 		    "manip" : manip, # see below for valid values
 		    "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
 		  },
@@ -61,14 +62,14 @@ class Motion_planning:
 		  "costs" : [
 		  {
 		    "type" : "joint_vel", # joint-space velocity cost
-		    "params": {"coeffs" : [10000,10000,1]} # a list of length one is automatically expanded to a list of length n_dofs
+		    "params": {"coeffs" : [100,100,1]} # a list of length one is automatically expanded to a list of length n_dofs
 		    # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
 		  },
 		  {
 		    "type" : "collision",
 		    "params" : {
-		      "coeffs" : [1000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-		      "dist_pen" : [0.4], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+		      "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+		      "dist_pen" : [0.5], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
 		      "continuous" : True
 		    }
 		  },
@@ -76,8 +77,8 @@ class Motion_planning:
 		  {
 		    "type" : "collision",
 		    "params" : {
-		      "coeffs" : [1000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-		      "dist_pen" : [0.4], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+		      "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+		      "dist_pen" : [0.5], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
 		      "continuous" : False
 		    }
 		  }    
@@ -94,7 +95,7 @@ class Motion_planning:
 		    "params"  : {
 		      "max_displacement"  : 1,
 		      "first_step"        : 0,
-		      "last_step"         : 200 -1, #inclusive
+		      "last_step"         : n_steps -1, #inclusive
 		      "link"              : "s0"
 		    }
 		  }, 
@@ -104,7 +105,7 @@ class Motion_planning:
 		    "params"  : {
 		      "max_displacement"  : 1,
 		      "first_step"        : 0,
-		      "last_step"         : 200 -1, #inclusive
+		      "last_step"         : n_steps -1, #inclusive
 		      "link"              : "s1"
 		    }
 		  }
@@ -118,8 +119,18 @@ class Motion_planning:
 		return self.robot
 
 	def get_manip(self, name):
-		if 	 name == "left_arm" : return self.Left_arm
-		elif name == "right_arm" : return self.Right_arm
+		if 	 name == "left_arm" : return self.left_arm
+		elif name == "right_arm" : return self.right_arm
+
+	def set_manip(self, name, DOF):
+		assert name == "left_arm" or name == "right_arm"
+		if name == "left_arm":
+			self.left_arm_DOF = DOF
+		elif name == "right_arm":
+			self.right_arm_DOF = DOF
+		pass
+
+		self.get_robot().SetDOFValues(DOF, self.get_manip(name).GetArmIndices())
 
 	def optimize(self):
 		"""
@@ -139,8 +150,9 @@ class Motion_planning:
 			except KeyError: pass
 
 			if i == 0:
-				pull_back = self.target[0]
-				pull_back[-1] = 0
+				limit = self.robot.GetDOFLimits()[0][-1]		# Gets the maximum retraction distance for our model robot
+				pull_back = eval('self.' + self.plan_arm + '_DOF')
+				pull_back[-1] = max(limit, pull_back[-1] -5)
 				self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : pull_back}})	# Straight line initialization
 
 			elif i == 1:
@@ -188,8 +200,8 @@ if __name__ == "__main__":
 	planner = Motion_planning('env.xml', "right_arm")
 	planner.init_collision_checker('pqp', [op.CollisionOptions.Distance, op.CollisionOptions.Contacts])
 
-	planner.get_robot().SetDOFValues(joint_start1, planner.get_manip("left_arm").GetArmIndices())
-	planner.get_robot().SetDOFValues(joint_start2, planner.get_manip("right_arm").GetArmIndices())
+	planner.set_manip(name="left_arm", DOF=joint_start1)
+	planner.set_manip(name="right_arm", DOF=joint_start2)
 
 	IK_obj = IK.dVRK_IK_simple()                                # Creates an IK object 
 	endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
