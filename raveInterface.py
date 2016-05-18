@@ -63,6 +63,7 @@ class Motion_planning:
 		  {
 		    "type" : "joint_vel", # joint-space velocity cost
 		    "params": {"coeffs" : [100,100,1]} # a list of length one is automatically expanded to a list of length n_dofs
+
 		    # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
 		  },
 		  {
@@ -70,6 +71,7 @@ class Motion_planning:
 		    "params" : {
 		      "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
 		      "dist_pen" : [0.5], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+
 		      "continuous" : True
 		    }
 		  },
@@ -79,6 +81,7 @@ class Motion_planning:
 		    "params" : {
 		      "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
 		      "dist_pen" : [0.5], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+
 		      "continuous" : False
 		    }
 		  }    
@@ -88,6 +91,7 @@ class Motion_planning:
 		  {
 		    "type" : "joint", # joint-space target
 		    "params" : {"vals" : joint_target[0]} # length of vals = # dofs of manip
+
 		    },
 		  {
 		    "type"    : "cart_vel",
@@ -109,11 +113,11 @@ class Motion_planning:
 		      "link"              : "s1"
 		    }
 		  }
-
 		  ]
 		}
 
 		return
+
 
 	def get_robot(self):
 		return self.robot

@@ -48,7 +48,7 @@ class dVRK_IK_simple:
 			[th, az] = self.__checkSingularity(basePos, desiredPos)
 			joint_DOF.append(self.__getLlimits([th, az, ext]))
 		return joint_DOF													# Returns final DOF as nested list
-
+		
 	def get_endEffector_fromDOF(self, joint_DOF):
 		# Returns end effector pose from DOF input in seqeunce [X, Y, Z]
 		# the joint_DOF type can either be a single list of a nested list to handle multiple way point specifications
