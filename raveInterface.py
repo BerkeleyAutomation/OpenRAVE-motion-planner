@@ -44,7 +44,7 @@ class Motion_planning:
 	# collisionChecker = op.RaveCreateCollisionChecker(env,'pqp')
 	# collisionChecker.SetCollisionOptions(op.CollisionOptions.Distance|op.CollisionOptions.Contacts)
 
-	def set_request(self, manip, joint_target):
+	def __set_request(self, manip, joint_target):
 		"""
 		Starts with a straight line trajectory to the end goal
 		"""
@@ -136,7 +136,7 @@ class Motion_planning:
 
 		self.get_robot().SetDOFValues(DOF, self.get_manip(name).GetArmIndices())
 
-	def optimize(self):
+	def optimize(self, manip, joint_target, algorithm):
 		"""
 		Optimization of the robot via initialization of motion through different way points
 		We start by performing optimization in a straight line towards the joint target
@@ -149,6 +149,9 @@ class Motion_planning:
 			2) Retraction of arm
 			3) Stationary
 		"""
+		self.__init_traj(manip=manip, joint_target=joint_target, algorithm=algorithm)
+		self.__set_request(manip=manip, joint_target=joint_target)
+
 		for i in range(3):
 			try: del self.request['init_info']
 			except KeyError: pass
@@ -193,8 +196,36 @@ class Motion_planning:
 	  		if flag == True:
 	  			return False		# That means that collision happened
 	  		time.sleep(0.05)
-
 	  	return True
+
+	def __init_traj(self, manip, joint_target, algorithm):
+		"""
+		Creates an initial trajectory plan between start and end goal poses
+		"""
+		Algo = "OMPL_" + algorithm
+		planner 	= op.RaveCreatePlanner(self.env, Algo)		# Initializes a planner with algorithm
+		simplifier 	= op.RaveCreatePlanner(self.env, 'OMPL_Simplifier')
+		params 		= planner.PlannerParameters()
+		params.SetRobotActiveJoints(self.get_robot())
+		params.SetGoalConfig(joint_target + [3.14/3, 3.14/4, 0])
+		self.get_robot().SetActiveManipulator(self.get_manip(name=manip))
+
+		with self.env:
+			with self.get_robot():
+				print "Starting intial plan using {:s} algorithm".format(algorithm)
+				traj = op.RaveCreateTrajectory(self.env, 'GenericTrajectory')
+				self.env.GetCollisionChecker().SetCollisionOptions(op.CollisionOptions.Contacts)
+	        	IPython.embed()
+	        	planner.InitPlan(self.get_robot(), params)
+	        	result = planner.PlanPath(traj)
+	        	assert result == op.PlannerStatus.HasSolution
+
+        		print 'Calling the OMPL_Simplifier for shortcutting.'
+	        	simplifier.InitPlan(self.get_robot(), op.Planner.PlannerParameters())
+    	    	result = simplifier.PlanPath(traj)
+    	    	assert result == op.PlannerStatus.HasSolution
+
+        	return result
 
 if __name__ == "__main__":
 	joint_start1 = [3.14/3, 3.14/4, 0]
@@ -211,8 +242,7 @@ if __name__ == "__main__":
 	endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
 	joint_target = IK_obj.get_joint_DOF(endEff)     
 
-	planner.set_request(manip, joint_target)
-	planner.optimize()
+	planner.optimize(manip, [-3.14/4, 3.14/4, 0], algorithm="RRT")
 	planner.simulate()
 
 	IPython.embed()
