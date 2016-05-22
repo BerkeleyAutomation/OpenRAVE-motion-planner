@@ -44,13 +44,12 @@ class Motion_planning:
 	# collisionChecker = op.RaveCreateCollisionChecker(env,'pqp')
 	# collisionChecker.SetCollisionOptions(op.CollisionOptions.Distance|op.CollisionOptions.Contacts)
 
-	def __set_request(self, manip, joint_target):
+	def __set_request(self, manip, joint_target, n_steps):
 		"""
 		Starts with a straight line trajectory to the end goal
 		"""
 		self.plan_arm 	= manip 	# Sets the planning arm for visual purpose
 		self.target 	= joint_target
-		n_steps = 200
 
 		self.request = {
 		  "basic_info" : {
@@ -64,7 +63,6 @@ class Motion_planning:
 		    "type" : "joint_vel", # joint-space velocity cost
 		    "params": {"coeffs" : [100,100,1]} # a list of length one is automatically expanded to a list of length n_dofs
 
-		    # also valid: [1.9, 2, 3, 4, 5, 5, 4, 3, 2, 1]
 		  },
 		  {
 		    "type" : "collision",
@@ -90,7 +88,7 @@ class Motion_planning:
 		  "constraints" : [
 		  {
 		    "type" : "joint", # joint-space target
-		    "params" : {"vals" : joint_target[0]} # length of vals = # dofs of manip
+		    "params" : {"vals" : joint_target[-1]} # length of vals = # dofs of manip
 
 		    },
 		  {
@@ -149,32 +147,37 @@ class Motion_planning:
 			2) Retraction of arm
 			3) Stationary
 		"""
-		self.__init_traj(manip=manip, joint_target=joint_target, algorithm=algorithm)
-		self.__set_request(manip=manip, joint_target=joint_target)
+		traj 	= self.__init_traj(manip=manip, joint_target=joint_target, algorithm=algorithm)
+		n_steps = len(traj)
+		self.__set_request(manip=manip, joint_target=traj, n_steps=n_steps)
 
-		for i in range(3):
+		for i in range(4):
 			try: del self.request['init_info']
 			except KeyError: pass
 
 			if i == 0:
+				self.request.update({"init_info" : {"type" : "given_traj", "data" : traj}})	# Way point initialization after path planning
+
+			elif i == 1:
 				limit = self.robot.GetDOFLimits()[0][-1]		# Gets the maximum retraction distance for our model robot
 				pull_back = eval('self.' + self.plan_arm + '_DOF')
 				pull_back[-1] = max(limit, pull_back[-1] -5)
 				self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : pull_back}})	# Straight line initialization
 
-			elif i == 1:
-				self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : self.target[0]}})	# Straight line initialization
-
 			elif i == 2:
+				self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : self.target[-1]}})	# Straight line initialization
+
+			elif i == 3:
 				self.request.update({"init_info" : {"type" : "stationary"}})	# Straight line initialization
 
-			jd 			= json.dumps(self.request) 					# convert dictionary into json-formatted string
-			prob 		= trajoptpy.ConstructProblem(jd, self.env) 	# create object that stores optimization problem
-			result 		= trajoptpy.OptimizeProblem(prob) 			# do optimization
-
-			if self.__check_safe(result.GetTraj()):
-				self.traj 	= result.GetTraj()
-				return
+			
+	    	jd 			= json.dumps(self.request) 					# convert dictionary into json-formatted string
+	    	prob 		= trajoptpy.ConstructProblem(jd, self.env) 	# create object that stores optimization problem
+	    	result 		= trajoptpy.OptimizeProblem(prob) 			# do Optimization
+	    	
+	    	if self.__check_safe(result.GetTraj()):
+	    		self.traj 	= result.GetTraj()
+	    		return
 
 		raise Exception('No path is safe')
 		return
@@ -202,38 +205,46 @@ class Motion_planning:
 		"""
 		Creates an initial trajectory plan between start and end goal poses
 		"""
-		Algo = "OMPL_" + algorithm
+		# Issue with the init and goal configuratons -> Planner thinks that the arms are in collision
+
+		Algo 		= "OMPL_" + algorithm
 		planner 	= op.RaveCreatePlanner(self.env, Algo)		# Initializes a planner with algorithm
 		simplifier 	= op.RaveCreatePlanner(self.env, 'OMPL_Simplifier')
-		params 		= planner.PlannerParameters()
-		params.SetRobotActiveJoints(self.get_robot())
-		params.SetGoalConfig(joint_target + [3.14/3, 3.14/4, 0])
-		self.get_robot().SetActiveManipulator(self.get_manip(name=manip))
+		self.env.GetCollisionChecker().SetCollisionOptions(op.CollisionOptions.Contacts)
+
+		with self.env:
+			arm_indx = self.get_manip(name=manip).GetArmIndices()
+			self.get_robot().SetActiveDOFs(arm_indx)		# Plan for only the arm specified in manip
+			self.get_robot().SetActiveDOFValues(self.right_arm_DOF)
+			self.get_robot().SetActiveManipulator(self.get_manip(name=manip))
+
+		params 		 = planner.PlannerParameters()				# Creates an empty param to be filled 
+		params.SetRobotActiveJoints(self.robot)
+		params.SetGoalConfig(joint_target[0])
 
 		with self.env:
 			with self.get_robot():
 				print "Starting intial plan using {:s} algorithm".format(algorithm)
-				traj = op.RaveCreateTrajectory(self.env, 'GenericTrajectory')
-				self.env.GetCollisionChecker().SetCollisionOptions(op.CollisionOptions.Contacts)
-	        	IPython.embed()
-	        	planner.InitPlan(self.get_robot(), params)
-	        	result = planner.PlanPath(traj)
-	        	assert result == op.PlannerStatus.HasSolution
+				traj = op.RaveCreateTrajectory(self.env, '')
+				planner.InitPlan(self.get_robot(), params)
+				result = planner.PlanPath(traj)
+				assert result == op.PlannerStatus.HasSolution
+				IPython.embed()
+				# print 'Calling the OMPL_Simplifier for shortcutting.'
+				# simplifier.InitPlan(self.get_robot(), op.Planner.PlannerParameters())
+				# result = simplifier.PlanPath(traj)
+				# assert result == op.PlannerStatus.HasSolution
 
-        		print 'Calling the OMPL_Simplifier for shortcutting.'
-	        	simplifier.InitPlan(self.get_robot(), op.Planner.PlannerParameters())
-    	    	result = simplifier.PlanPath(traj)
-    	    	assert result == op.PlannerStatus.HasSolution
+				trajectory = [traj.GetWaypoint(i).tolist() for i in range(traj.GetNumWaypoints())]
+				return trajectory
 
-        	return result
-
-if __name__ == "__main__":
+if __name__ == "__main__":	
 	joint_start1 = [3.14/3, 3.14/4, 0]
-	joint_start2 = [-3.14/4, 3.14/4, 0]
-	manip = "right_arm"
+	joint_start2 = [-3.14/5, 3.14/4, 0]
+	manip 		 = "right_arm"
 
 	planner = Motion_planning('env.xml', "right_arm")
-	planner.init_collision_checker('pqp', [op.CollisionOptions.Distance, op.CollisionOptions.Contacts])
+	# planner.init_collision_checker('pqp', [op.CollisionOptions.Distance, op.CollisionOptions.Contacts])
 
 	planner.set_manip(name="left_arm", DOF=joint_start1)
 	planner.set_manip(name="right_arm", DOF=joint_start2)
@@ -242,7 +253,7 @@ if __name__ == "__main__":
 	endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
 	joint_target = IK_obj.get_joint_DOF(endEff)     
 
-	planner.optimize(manip, [-3.14/4, 3.14/4, 0], algorithm="RRT")
+	planner.optimize(manip, joint_target, algorithm="RRTStar")
 	planner.simulate()
 
 	IPython.embed()
