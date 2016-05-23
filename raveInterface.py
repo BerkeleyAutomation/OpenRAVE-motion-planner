@@ -30,7 +30,7 @@ class Motion_planning:
 
 	def init_collision_checker(self, checker, collision_options):
 		"""
-		params: checker <string>: The name of the checker used for collision detection
+		params: checker <string>: The name of the Checkser used for collision detection
 				collision_options <list><op::CollisionOptions>
 		"""
 		collisionChecker = op.RaveCreateCollisionChecker(self.env, checker)
@@ -226,7 +226,6 @@ class Motion_planning:
 		params 		 = planner.PlannerParameters()				# Creates an empty param to be filled 
 		params.SetRobotActiveJoints(self.robot)
 		params.SetGoalConfig(joint_target[0])
-		# params.SetExtraParameters('<range>0.02</range>')
 
 		with self.env:
 			with self.get_robot():
