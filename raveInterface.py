@@ -19,6 +19,7 @@ class Motion_planning:
 		self.env = op.Environment()
 		self.env.StopSimulation()
 		self.env.Load(env_file)
+		self.env.SetViewer('qtcoin')
 
 		self.robot 		= self.env.GetRobots()[indx]
 		self.left_arm 	= self.robot.GetManipulator('left_arm')
@@ -180,10 +181,13 @@ class Motion_planning:
 	    		return
 
 		raise Exception('No path is safe')
+		# self.plan_arm = manip
+		# self.traj = traj
+		# IPython.embed()
+		# self.simulate()
 		return
 
 	def simulate(self):
-		self.env.SetViewer('qtcoin')
 	  	for t in self.traj:
 	  		self.robot.SetDOFValues(t, self.robot.GetManipulator(self.plan_arm).GetArmIndices())
 	  		time.sleep(0.1)
@@ -210,7 +214,7 @@ class Motion_planning:
 		Algo 		= "OMPL_" + algorithm
 		planner 	= op.RaveCreatePlanner(self.env, Algo)		# Initializes a planner with algorithm
 		simplifier 	= op.RaveCreatePlanner(self.env, 'OMPL_Simplifier')
-		self.env.GetCollisionChecker().SetCollisionOptions(op.CollisionOptions.Contacts)
+		# self.env.GetCollisionChecker().SetCollisionOptions(op.CollisionOptions.Contacts)
 
 		with self.env:
 			arm_indx = self.get_manip(name=manip).GetArmIndices()
@@ -221,7 +225,8 @@ class Motion_planning:
 		params 		 = planner.PlannerParameters()				# Creates an empty param to be filled 
 		params.SetRobotActiveJoints(self.robot)
 		params.SetGoalConfig(joint_target[0])
-
+		params.SetExtraParameters('<range>0.02</range>')
+		
 		with self.env:
 			with self.get_robot():
 				print "Starting intial plan using {:s} algorithm".format(algorithm)
@@ -229,22 +234,22 @@ class Motion_planning:
 				planner.InitPlan(self.get_robot(), params)
 				result = planner.PlanPath(traj)
 				assert result == op.PlannerStatus.HasSolution
-				IPython.embed()
-				# print 'Calling the OMPL_Simplifier for shortcutting.'
-				# simplifier.InitPlan(self.get_robot(), op.Planner.PlannerParameters())
-				# result = simplifier.PlanPath(traj)
-				# assert result == op.PlannerStatus.HasSolution
+				
+				print 'Calling the OMPL_Simplifier for shortcutting.'
+				simplifier.InitPlan(self.get_robot(), op.Planner.PlannerParameters())
+				result = simplifier.PlanPath(traj)
+				assert result == op.PlannerStatus.HasSolution
 
 				trajectory = [traj.GetWaypoint(i).tolist() for i in range(traj.GetNumWaypoints())]
 				return trajectory
 
 if __name__ == "__main__":	
-	joint_start1 = [3.14/3, 3.14/4, 0]
+	joint_start1 = [3.14/3, 3.14/4, 1]
 	joint_start2 = [-3.14/5, 3.14/4, 0]
 	manip 		 = "right_arm"
 
 	planner = Motion_planning('env.xml', "right_arm")
-	# planner.init_collision_checker('pqp', [op.CollisionOptions.Distance, op.CollisionOptions.Contacts])
+	planner.init_collision_checker('pqp', [op.CollisionOptions.Contacts])
 
 	planner.set_manip(name="left_arm", DOF=joint_start1)
 	planner.set_manip(name="right_arm", DOF=joint_start2)
@@ -253,7 +258,7 @@ if __name__ == "__main__":
 	endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
 	joint_target = IK_obj.get_joint_DOF(endEff)     
 
-	planner.optimize(manip, joint_target, algorithm="RRTStar")
+	planner.optimize(manip, joint_target, algorithm="RRTConnect")
 	planner.simulate()
 
 	IPython.embed()
