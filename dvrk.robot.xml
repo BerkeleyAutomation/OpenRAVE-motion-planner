@@ -27,7 +27,7 @@
       <translation>0 -10 0</translation>
       <geom type="cylinder">
         <rotationaxis>0 1 0 90</rotationaxis>
-        <radius>1</radius>
+        <radius>0.5</radius>
         <height>20</height>
       </geom>
     </body>
@@ -70,7 +70,7 @@
       <translation>0 -10 0</translation>
       <geom type="cylinder">
         <rotationaxis>0 1 0 90</rotationaxis>
-        <radius>1</radius>
+        <radius>0.5</radius>
         <height>20</height>
       </geom>
     </body>

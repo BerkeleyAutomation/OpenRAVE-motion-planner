@@ -17,7 +17,7 @@ env.Load("env.xml")
 robot = env.GetRobot('dvrk')
 manipulator = robot.GetManipulator('right_arm')
 
-planner = RaveCreatePlanner(env, 'OMPL_RRTConnect')
+planner = RaveCreatePlanner(env, 'OMPL_RRTStar')
 simplifier = RaveCreatePlanner(env, 'OMPL_Simplifier')
 
 joint_start1 = [3.14/3, 3.14/4, 1]
@@ -39,7 +39,7 @@ params.SetGoalConfig(goal_config)
 print 'Parameters:'
 print planner.SendCommand('GetParameters')
 
-params.SetExtraParameters('<range>0.02</range>')
+# params.SetExtraParameters('<range>0.02</range>')
 
 collisionChecker = RaveCreateCollisionChecker(env,'pqp')
 collisionChecker.SetCollisionOptions(CollisionOptions.Contacts)

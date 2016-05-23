@@ -45,7 +45,7 @@ class Motion_planning:
 	# collisionChecker = op.RaveCreateCollisionChecker(env,'pqp')
 	# collisionChecker.SetCollisionOptions(op.CollisionOptions.Distance|op.CollisionOptions.Contacts)
 
-	def __set_request(self, manip, joint_target, n_steps):
+	def __set_request(self, manip, joint_target, n_steps=10):
 		"""
 		Starts with a straight line trajectory to the end goal
 		"""
@@ -54,63 +54,63 @@ class Motion_planning:
 
 		self.request = {
 		  "basic_info" : {
-		    "n_steps" : n_steps,
-		    "manip" : manip, # see below for valid values
-		    "start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
+			"n_steps" : n_steps,
+			"manip" : manip, # see below for valid values
+			"start_fixed" : True # i.e., DOF values at first timestep are fixed based on current robot state
 		  },
 
 		  "costs" : [
 		  {
-		    "type" : "joint_vel", # joint-space velocity cost
-		    "params": {"coeffs" : [100,100,1]} # a list of length one is automatically expanded to a list of length n_dofs
+			"type" : "joint_vel", # joint-space velocity cost
+			"params": {"coeffs" : [100,100,1]} # a list of length one is automatically expanded to a list of length n_dofs
 
 		  },
 		  {
-		    "type" : "collision",
-		    "params" : {
-		      "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-		      "dist_pen" : [0.5], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+			"type" : "collision",
+			"params" : {
+			  "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+			  "dist_pen" : [0.1], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
 
-		      "continuous" : True
-		    }
+			  "continuous" : True
+			}
 		  },
 
 		  {
-		    "type" : "collision",
-		    "params" : {
-		      "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
-		      "dist_pen" : [0.5], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
+			"type" : "collision",
+			"params" : {
+			  "coeffs" : [10000], # penalty coefficients. list of length one is automatically expanded to a list of length n_timesteps
+			  "dist_pen" : [0.1], # robot-obstacle distance that penalty kicks in. expands to length n_timesteps
 
-		      "continuous" : False
-		    }
+			  "continuous" : False
+			}
 		  }    
 		  ],
 
 		  "constraints" : [
 		  {
-		    "type" : "joint", # joint-space target
-		    "params" : {"vals" : joint_target[-1]} # length of vals = # dofs of manip
+			"type" : "joint", # joint-space target
+			"params" : {"vals" : joint_target} # length of vals = # dofs of manip
 
-		    },
+			},
 		  {
-		    "type"    : "cart_vel",
-		    "name"    : "s0_vel",
-		    "params"  : {
-		      "max_displacement"  : 1,
-		      "first_step"        : 0,
-		      "last_step"         : n_steps -1, #inclusive
-		      "link"              : "s0"
-		    }
+			"type"    : "cart_vel",
+			"name"    : "s0_vel",
+			"params"  : {
+			  "max_displacement"  : 1,
+			  "first_step"        : 0,
+			  "last_step"         : n_steps -1, #inclusive
+			  "link"              : "s0"
+			}
 		  }, 
 		  {
-		    "type"    : "cart_vel",
-		    "name"    : "s1_vel",
-		    "params"  : {
-		      "max_displacement"  : 1,
-		      "first_step"        : 0,
-		      "last_step"         : n_steps -1, #inclusive
-		      "link"              : "s1"
-		    }
+			"type"    : "cart_vel",
+			"name"    : "s1_vel",
+			"params"  : {
+			  "max_displacement"  : 1,
+			  "first_step"        : 0,
+			  "last_step"         : n_steps -1, #inclusive
+			  "link"              : "s1"
+			}
 		  }
 		  ]
 		}
@@ -148,62 +148,63 @@ class Motion_planning:
 			2) Retraction of arm
 			3) Stationary
 		"""
-		traj 	= self.__init_traj(manip=manip, joint_target=joint_target, algorithm=algorithm)
-		n_steps = len(traj)
-		self.__set_request(manip=manip, joint_target=traj, n_steps=n_steps)
+		trajectory 		= self.__init_traj(manip=manip, joint_target=joint_target, algorithm=algorithm) # Performs initial RRT planning
+		self.traj 		= []
 
-		for i in range(4):
-			try: del self.request['init_info']
-			except KeyError: pass
+		for i in range(len(trajectory) -1):
+			self.__set_request(manip=manip, joint_target=trajectory[i +1])
+			self.robot.SetDOFValues(trajectory[i], self.robot.GetManipulator(self.plan_arm).GetArmIndices())
 
-			if i == 0:
-				self.request.update({"init_info" : {"type" : "given_traj", "data" : traj}})	# Way point initialization after path planning
+			for j in range(3):
+				try: del self.request['init_info']
+				except KeyError: pass
 
-			elif i == 1:
-				limit = self.robot.GetDOFLimits()[0][-1]		# Gets the maximum retraction distance for our model robot
-				pull_back = eval('self.' + self.plan_arm + '_DOF')
-				pull_back[-1] = max(limit, pull_back[-1] -5)
-				self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : pull_back}})	# Straight line initialization
+				# if i == 0:
+					# self.request.update({"init_info" : {"type" : "given_traj", "data" : traj}})	# Way point initialization after path planning
 
-			elif i == 2:
-				self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : self.target[-1]}})	# Straight line initialization
+				if j == 0:
+					self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : self.target}})	# Straight line initialization
 
-			elif i == 3:
-				self.request.update({"init_info" : {"type" : "stationary"}})	# Straight line initialization
+				elif j == 1:
+					limit = self.robot.GetDOFLimits()[0][-1]		# Gets the maximum retraction distance for our model robot
+					pull_back = eval('self.' + self.plan_arm + '_DOF')
+					pull_back[-1] = max(limit, pull_back[-1] -5)
+					self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : pull_back}})	# Straight line initialization
 
-			
-	    	jd 			= json.dumps(self.request) 					# convert dictionary into json-formatted string
-	    	prob 		= trajoptpy.ConstructProblem(jd, self.env) 	# create object that stores optimization problem
-	    	result 		= trajoptpy.OptimizeProblem(prob) 			# do Optimization
-	    	
-	    	if self.__check_safe(result.GetTraj()):
-	    		self.traj 	= result.GetTraj()
-	    		return
+				elif j == 2:
+					self.request.update({"init_info" : {"type" : "stationary"}})	# Straight line initialization
 
-		raise Exception('No path is safe')
-		# self.plan_arm = manip
-		# self.traj = traj
-		# IPython.embed()
-		# self.simulate()
+				jd 			= json.dumps(self.request) 					# convert dictionary into json-formatted string
+				prob 		= trajoptpy.ConstructProblem(jd, self.env) 	# create object that stores optimization problem
+				result 		= trajoptpy.OptimizeProblem(prob) 			# do Optimization
+				
+				if self.__check_safe(result.GetTraj()):
+					print(trajectory[i])
+					print(trajectory[i +1])
+					break
+				elif j == 2:
+					raise Exception('No path is safe')
+			print(">>>>>>>>>>>>>>>>" + ' ' + str(i))
+			self.traj += result.GetTraj().tolist()
 		return
 
 	def simulate(self):
-	  	for t in self.traj:
-	  		self.robot.SetDOFValues(t, self.robot.GetManipulator(self.plan_arm).GetArmIndices())
-	  		time.sleep(0.1)
+		for t in self.traj:
+			self.robot.SetDOFValues(t, self.robot.GetManipulator(self.plan_arm).GetArmIndices())
+			time.sleep(0.1)
 
 	def __check_safe(self, trajectory):
 		kin = self.env.GetKinBody('dvrk')
 		self.env.GetCollisionChecker().SetCollisionOptions(op.CollisionOptions.Contacts)
 
 		for t in trajectory:			
-  			self.robot.SetDOFValues(t, self.robot.GetManipulator(self.plan_arm).GetArmIndices())
-  			flag = self.env.CheckCollision(kin.GetLinks()[3], kin.GetLinks()[6])		# Checks for collisions between 2 cylinder arms of the robot
+			self.robot.SetDOFValues(t, self.robot.GetManipulator(self.plan_arm).GetArmIndices())
+			flag = self.env.CheckCollision(kin.GetLinks()[3], kin.GetLinks()[6])		# Checks for collisions between 2 cylinder arms of the robot
 
-	  		if flag == True:
-	  			return False		# That means that collision happened
-	  		time.sleep(0.05)
-	  	return True
+			if flag == True:
+				return False		# That means that collision happened
+			time.sleep(0.05)
+		return True
 
 	def __init_traj(self, manip, joint_target, algorithm):
 		"""
@@ -225,8 +226,8 @@ class Motion_planning:
 		params 		 = planner.PlannerParameters()				# Creates an empty param to be filled 
 		params.SetRobotActiveJoints(self.robot)
 		params.SetGoalConfig(joint_target[0])
-		params.SetExtraParameters('<range>0.02</range>')
-		
+		# params.SetExtraParameters('<range>0.02</range>')
+
 		with self.env:
 			with self.get_robot():
 				print "Starting intial plan using {:s} algorithm".format(algorithm)
@@ -258,7 +259,7 @@ if __name__ == "__main__":
 	endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
 	joint_target = IK_obj.get_joint_DOF(endEff)     
 
-	planner.optimize(manip, joint_target, algorithm="RRTConnect")
+	planner.optimize(manip, joint_target, algorithm="RRTStar")
 	planner.simulate()
 
 	IPython.embed()
