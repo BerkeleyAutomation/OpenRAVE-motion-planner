@@ -10,7 +10,7 @@ import json
 import time
 import IK
 import IPython
-from math import pi
+from math import pi, ceil
 import numpy as np
 
 class Motion_planning:
@@ -150,9 +150,15 @@ class Motion_planning:
 		"""
 		trajectory 		= self.__init_traj(manip=manip, joint_target=joint_target, algorithm=algorithm) # Performs initial RRT planning
 		self.traj 		= []
+		IK_obj 			= IK.dVRK_IK_simple()
 
 		for i in range(len(trajectory) -1):
-			self.__set_request(manip=manip, joint_target=trajectory[i +1])
+			step_dis_ratio = 0.5
+			eff1 	= IK_obj.get_endEffector_fromDOF(trajectory[i +1])
+			eff2 	= IK_obj.get_endEffector_fromDOF(trajectory[i])
+			dis 	= np.linalg.norm(np.array(eff1) - np.array(eff2))
+			n_steps = max(int(ceil(dis / step_dis_ratio)) , 3)
+			self.__set_request(manip=manip, joint_target=trajectory[i +1], n_steps=n_steps)
 			self.robot.SetDOFValues(trajectory[i], self.robot.GetManipulator(self.plan_arm).GetArmIndices())
 
 			for j in range(3):
@@ -184,7 +190,6 @@ class Motion_planning:
 					break
 				elif j == 2:
 					raise Exception('No path is safe')
-			print(">>>>>>>>>>>>>>>>" + ' ' + str(i))
 			self.traj += result.GetTraj().tolist()
 		return
 
@@ -258,7 +263,7 @@ if __name__ == "__main__":
 	endEff = IK_obj.get_endEffector_fromDOF([-3.14/2, 3.14/4, 0])
 	joint_target = IK_obj.get_joint_DOF(endEff)     
 
-	planner.optimize(manip, joint_target, algorithm="RRTStar")
+	planner.optimize(manip, joint_target, algorithm="RRTConnect")
 	planner.simulate()
 
 	IPython.embed()
