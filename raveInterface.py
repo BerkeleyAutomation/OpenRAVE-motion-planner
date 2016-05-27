@@ -89,9 +89,9 @@ class Motion_planning:
 		  "constraints" : [
 		  {
 			"type" : "joint", # joint-space target
-			"params" : {"vals" : joint_target} # length of vals = # dofs of manip
+			"params" : {"vals" : joint_target[-1]} # length of vals = # dofs of manip
 
-			},
+			},	
 		  {
 			"type"    : "cart_vel",
 			"name"    : "s0_vel",
@@ -152,45 +152,48 @@ class Motion_planning:
 		self.traj 		= []
 		IK_obj 			= IK.dVRK_IK_simple()
 
-		for i in range(len(trajectory) -1):
-			step_dis_ratio = 0.5
-			eff1 	= IK_obj.get_endEffector_fromDOF(trajectory[i +1])
-			eff2 	= IK_obj.get_endEffector_fromDOF(trajectory[i])
-			dis 	= np.linalg.norm(np.array(eff1) - np.array(eff2))
-			n_steps = max(int(ceil(dis / step_dis_ratio)) , 3)
-			self.__set_request(manip=manip, joint_target=trajectory[i +1], n_steps=n_steps)
-			self.robot.SetDOFValues(trajectory[i], self.robot.GetManipulator(self.plan_arm).GetArmIndices())
+		self.__set_request(manip=manip, joint_target=trajectory, n_steps=len(trajectory))
+		self.request.update({"init_info" : {"type" : "given_traj", "data" : trajectory}})	# Way point initialization after path planning
+		jd 			= json.dumps(self.request) 					# convert dictionary into json-formatted string
+		prob 		= trajoptpy.ConstructProblem(jd, self.env) 	# create object that stores optimization problem
+		result 		= trajoptpy.OptimizeProblem(prob) 			# do Optimization
+		self.traj 	= result.GetTraj().tolist()
+		# for i in range(len(trajectory) -1):
+		# 	step_dis_ratio = 0.5
+		# 	eff1 	= IK_obj.get_endEffector_fromDOF(trajectory[i +1])
+		# 	eff2 	= IK_obj.get_endEffector_fromDOF(trajectory[i])
+		# 	dis 	= np.linalg.norm(np.array(eff1) - np.array(eff2))
+		# 	n_steps = max(int(ceil(dis / step_dis_ratio)) , 3)
+		# 	self.__set_request(manip=manip, joint_target=trajectory[i +1], n_steps=n_steps)
+		# 	self.robot.SetDOFValues(trajectory[i], self.robot.GetManipulator(self.plan_arm).GetArmIndices())
 
-			for j in range(3):
-				try: del self.request['init_info']
-				except KeyError: pass
+		# 	for j in range(3):
+		# 		try: del self.request['init_info']
+		# 		except KeyError: pass
 
-				# if i == 0:
-					# self.request.update({"init_info" : {"type" : "given_traj", "data" : traj}})	# Way point initialization after path planning
+		# 		if j == 0:
+		# 			self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : self.target}})	# Straight line initialization
 
-				if j == 0:
-					self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : self.target}})	# Straight line initialization
+		# 		elif j == 1:
+		# 			limit = self.robot.GetDOFLimits()[0][-1]		# Gets the maximum retraction distance for our model robot
+		# 			pull_back = eval('self.' + self.plan_arm + '_DOF')
+		# 			pull_back[-1] = max(limit, pull_back[-1] -5)
+		# 			self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : pull_back}})	# Straight line initialization
 
-				elif j == 1:
-					limit = self.robot.GetDOFLimits()[0][-1]		# Gets the maximum retraction distance for our model robot
-					pull_back = eval('self.' + self.plan_arm + '_DOF')
-					pull_back[-1] = max(limit, pull_back[-1] -5)
-					self.request.update({"init_info" : {"type" : "straight_line", "endpoint" : pull_back}})	# Straight line initialization
+		# 		elif j == 2:
+		# 			self.request.update({"init_info" : {"type" : "stationary"}})	# Straight line initialization
 
-				elif j == 2:
-					self.request.update({"init_info" : {"type" : "stationary"}})	# Straight line initialization
-
-				jd 			= json.dumps(self.request) 					# convert dictionary into json-formatted string
-				prob 		= trajoptpy.ConstructProblem(jd, self.env) 	# create object that stores optimization problem
-				result 		= trajoptpy.OptimizeProblem(prob) 			# do Optimization
+		# 		jd 			= json.dumps(self.request) 					# convert dictionary into json-formatted string
+		# 		prob 		= trajoptpy.ConstructProblem(jd, self.env) 	# create object that stores optimization problem
+		# 		result 		= trajoptpy.OptimizeProblem(prob) 			# do Optimization
 				
-				if self.__check_safe(result.GetTraj()):
-					print(trajectory[i])
-					print(trajectory[i +1])
-					break
-				elif j == 2:
-					raise Exception('No path is safe')
-			self.traj += result.GetTraj().tolist()
+		# 		if self.__check_safe(result.GetTraj()):
+		# 			print(trajectory[i])
+		# 			print(trajectory[i +1])
+		# 			break
+		# 		elif j == 2:
+		# 			raise Exception('No path is safe')
+		# 		self.traj += result.GetTraj().tolist()
 		return
 
 	def simulate(self):
@@ -232,6 +235,10 @@ class Motion_planning:
 		params.SetRobotActiveJoints(self.robot)
 		params.SetGoalConfig(joint_target[0])
 
+		extraParams = ('<_nmaxiterations>{:d}</_nmaxiterations>'.format(10000))
+
+		params.SetExtraParameters(extraParams)
+
 		with self.env:
 			with self.get_robot():
 				print "Starting intial plan using {:s} algorithm".format(algorithm)
@@ -239,7 +246,7 @@ class Motion_planning:
 				planner.InitPlan(self.get_robot(), params)
 				result = planner.PlanPath(traj)
 				assert result == op.PlannerStatus.HasSolution
-				
+
 				print 'Calling the OMPL_Simplifier for shortcutting.'
 				simplifier.InitPlan(self.get_robot(), op.Planner.PlannerParameters())
 				result = simplifier.PlanPath(traj)
