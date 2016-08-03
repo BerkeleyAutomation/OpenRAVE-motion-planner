@@ -1,4 +1,4 @@
-# robot-IK-model-
+# OpenRAVE motion planner for dVRK
 
 This repository contains a motion planner for a model dVRK using OMPL and Trajopt
 The dVRK robot model and obstacles are found in the env.xml file
