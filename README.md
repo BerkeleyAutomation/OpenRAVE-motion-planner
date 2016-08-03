@@ -10,6 +10,6 @@ The robot then plans from its starting joint DOF to the target joint DOF
 The script IK.py contains the IK and FK analytical solutions for each arm of the robot. 
 
 To launch the planner:
-''' sh
+``` sh
 $ python raveInterface.py
-'''
+```
